@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionário - Emissão de CO2</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Questionário de Emissão de CO2</h1>
+            <p>Preencha as informações sobre seus deslocamentos para o evento esportivo</p>
+        </header>
+        
+        <form action="/submit" method="post" class="questionario-form">
+            <div class="form-section">
+                <h2>Informações Pessoais</h2>
+                
+                <!-- CAMPO ATUALIZADO: Estado de origem -->
+                <div class="form-group">
+                    <label for="estado_origem">Estado de Origem:</label>
+                    <select id="estado_origem" name="estado_origem" required>
+                        <option value="">Selecione seu estado de origem</option>
+                        {% for estado in estados_brasil %}
+                            {% if estado == "Não se aplica (estrangeiro)" %}
+                                <option value="{{ estado }}" style="font-style: italic; color: #666;">
+                                    {{ estado }}
+                                </option>
+                            {% else %}
+                                <option value="{{ estado }}">{{ estado }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <small style="color: #666; font-size: 0.9em;">
+                        Selecione "Não se aplica" caso seja de outro país
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_participante">Tipo de Participante: </label>
+                    <select class="form-control" id="tipo_participante" name="tipo_participante" required>
+                        <option value="">Selecione seu tipo de participação</option>
+                        <option value="Velejador/Velejadora">Velejador/Velejadora</option>
+                        <option value="Técnico/Técnica">Técnico/Técnica</option>
+                        <option value="Acompanhante do atleta">Acompanhante do atleta</option>
+                        <option value="Comissão de regata">Comissão de regata</option>
+                        <option value="Prestador/Prestadora de serviço">Prestador/Prestadora de serviço</option>
+                        <option value="Organização">Organização</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+            </div>
+            
+            <div class="form-section"><!-- ATUALIZADO -->
+                <h2>Deslocamento da sua residência até o local de hospedagem durante a participação no evento</h2> 
+                <h3>(Caso você resida nas proximidades do evento e não tenha realizado viagem, selecione “Outros” e insira “zero” na distância percorrida.)</h3>
+
+                <div class="form-group">
+                    <br>
+                    <label for="transporte_cidade">Principal meio de transporte utilizado:</label>
+                    <select id="transporte_cidade" name="transporte_cidade" required>
+                        <option value="">Selecione...</option>
+                        {% for transporte in transportes %}
+                        <option value="{{ transporte }}">{{ transporte.capitalize() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="distancia_cidade">Distância média total percorrida (ida e volta, em km):</label>
+                    <input type="number" id="distancia_cidade" name="distancia_cidade" min="0" step="0.1" required>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h2>Trajeto diário durante o evento (casa/hospedagem - clube - casa/hospedagem).</h2>
+                
+                <div class="form-group">
+                    <label for="transporte_local">Principal meio de transporte utilizado:</label>
+                    <select id="transporte_local" name="transporte_local" required>
+                        <option value="">Selecione...</option>
+                        {% for transporte in transportes %}
+                        <option value="{{ transporte }}">{{ transporte.capitalize() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="distancia_local">Distância média percorrida por dia (ida e volta, em km):</label>
+                    <input type="number" id="distancia_local" name="distancia_local" min="0" step="0.1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dias_evento">Quantidade de dias em que realizou esse percurso: </label>
+                    <input type="number" id="dias_evento" name="dias_evento" min="1" required>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Calcular Emissão</button>
+            </div>
+        </form>
+        
+        <footer>
+            <a href="/">Voltar para a página inicial</a>
+        </footer>
+    </div>
+</body>
+</html>

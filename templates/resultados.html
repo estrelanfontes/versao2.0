@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - Emissão de CO2</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Resultados da Sua Emissão de CO2</h1>
+            <p>Veja o impacto ambiental dos seus deslocamentos</p>
+        </header>
+        
+        <div class="resultados-container">
+            <div class="resumo-emissao">
+                <h2>Resumo da Sua Emissão</h2>
+                
+                <div class="emissao-card">
+                    <h3>{{ registro.emissao_total|round(2) }} gCO2</h3>
+                    <p>Total de emissões de carbono</p>
+                </div>
+                
+                <div class="detalhes-emissao">
+                    <h3>Detalhes:</h3>
+                    <ul>
+                        <li><strong>Local de Origem:</strong> 
+                            {% if registro.estado_origem == "Não se aplica (estrangeiro)" %}
+                                Estrangeiro
+                            {% else %}
+                                {{ registro.estado_origem }}
+                            {% endif %}
+                        </li>
+                        <li><strong>Tipo:</strong> {{ registro.tipo_participante }}</li>
+                        <li><strong>Transporte até a cidade:</strong> {{ registro.transporte_cidade }} ({{ registro.distancia_cidade }} km)</li>
+                        <li><strong>Transporte local:</strong> {{ registro.transporte_local }} ({{ registro.distancia_local }} km/dia)</li>
+                        <li><strong>Dias de evento:</strong> {{ registro.dias_evento }}</li>
+                        <li><strong>Data:</strong> {{ registro.data }}</li>
+                    </ul>
+                </div>
+                
+                <div class="comparacao">
+                    <h3>O que isso significa?</h3>
+                    <p>Sua emissão de {{ registro.emissao_total|round(2) }}g CO2 equivale a:</p>
+                    <ul>
+                        <li>{{ (registro.emissao_total / 21000)|round(1) }} árvores absorvendo CO2 por um ano</li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if grafico_base64 %}
+            <div class="graficos">
+                <h2>Estatísticas Coletivas</h2>
+                <p>Gráficos atualizados com todas as respostas recebidas:</p>
+                
+                <div class="grafico-container">
+                    <img src="data:image/png;base64,{{ grafico_base64 }}" alt="Gráficos de emissão de CO2">
+                </div>
+                
+                <div class="dica-ecologica">
+                    <h3>Dicas para Reduzir Sua Emissão:</h3>
+                    <ul>
+                        <li>Prefira transportes públicos sempre que possível</li>
+                        <li>Considere a carona solidária para eventos</li>
+                        <li>Para distâncias curtas, use bicicleta ou caminhe</li>
+                        <li>Compense suas emissões com programas de reflorestamento</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+<!-- ATUALIZAÇÃO -->
+        <div class="actions">
+            <a href="/questionario" class="btn-primary">Realizar Novo Cálculo</a>
+            <a href="/" class="btn-secondary">Página Inicial</a>
+    
+            <a href="/download-pdf/{{ resposta_id }}" class="btn-download" target="_blank">
+                📄 Baixar Informações PDF
+            </a>
+        </div><!---->
+        
+        <footer>
+            <p>Juntos podemos promover eventos esportivos mais sustentáveis!</p>
+        </footer>
+    </div>
+</body>
+</html>
