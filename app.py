@@ -170,7 +170,7 @@ def gerar_grafico_base64():
         transportes_efic = list(EMISSOES_TRANSPORTE.keys())
         
         bars = ax3.bar(transportes_efic, eficiencias, color='#FF9800')
-        ax3.set_title("Eficiência de Emissão por Tipo de Transporte")
+        ax3.set_title("Emissão por Tipo de Transporte")
         ax3.set_ylabel("gCO2 por km")
         ax3.set_xlabel("Tipo de Transporte")
         plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45)
@@ -629,5 +629,6 @@ if __name__ == '__main__':
     init_database()
     print("🚀 Servidor iniciando em http://127.0.0.1:5000")
     app.run(debug=True)
+
 
 
