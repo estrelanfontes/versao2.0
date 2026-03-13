@@ -56,9 +56,21 @@ class RespostaEmissao(db.Model):
     tipo_participante = db.Column(db.String(50), nullable=False)
     transporte_cidade = db.Column(db.String(50), nullable=False)
     distancia_cidade = db.Column(db.Numeric(10, 2), nullable=False)
+    custo_transporte = db.Column(db.Numeric(10, 2), nullable=True) 
     transporte_local = db.Column(db.String(50), nullable=False)
     distancia_local = db.Column(db.Numeric(10, 2), nullable=False)
     dias_evento = db.Column(db.Integer, nullable=False)
+    custo_transporte_diario = db.Column(db.Numeric(10, 2), nullable=True)
+
+        # NOVOS CAMPOS: Logísticas do evento
+    gasto_alimentacao = db.Column(db.Numeric(10, 2), nullable=True)      # Alimentação
+    gasto_equipamentos = db.Column(db.Numeric(10, 2), nullable=True)     # Transporte equipamentos
+    gasto_botes = db.Column(db.Numeric(10, 2), nullable=True)            # Aluguel de botes
+    gasto_hospedagem = db.Column(db.Numeric(10, 2), nullable=True)       # NOVO: Hospedagem
+
+    # NOVOS CAMPOS: Pontos turísticos
+    pontos_turisticos = db.Column(db.Text, nullable=True)           # Descrição dos pontos
+
     emissao_total = db.Column(db.Numeric(10, 2), nullable=False)
     data_registro = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -71,9 +83,19 @@ class RespostaEmissao(db.Model):
             'tipo_participante': self.tipo_participante,
             'transporte_cidade': self.transporte_cidade,
             'distancia_cidade': float(self.distancia_cidade),
+            'custo_transporte': float(self.custo_transporte) if self.custo_transporte else None,
             'transporte_local': self.transporte_local,
             'distancia_local': float(self.distancia_local),
             'dias_evento': self.dias_evento,
+            'custo_transporte_diario': float(self.custo_transporte_diario) if self.custo_transporte_diario else None,
+            
+            # Logisticas do evento
+            'gasto_alimentacao': float(self.gasto_alimentacao) if self.gasto_alimentacao else None,
+            'gasto_equipamentos': float(self.gasto_equipamentos) if self.gasto_equipamentos else None,
+            'gasto_botes': float(self.gasto_botes) if self.gasto_botes else None,
+            'gasto_hospedagem': float(self.gasto_hospedagem) if self.gasto_hospedagem else None,
+            'pontos_turisticos': self.pontos_turisticos,
+
             'emissao_total': float(self.emissao_total),
             'data': self.data_registro.strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -112,8 +134,9 @@ ESTADOS_BRASIL = [
     "Não se aplica (estrangeiro)"
 ]
 
-# Função para gerar gráfico
+# Função para gerar gráfico 
 def gerar_grafico_base64():
+    """Gera 4 gráficos: transportes (chegada/diário), emissões por transporte e econômico"""
     try:
         with app.app_context():
             respostas = RespostaEmissao.query.all()
@@ -121,69 +144,234 @@ def gerar_grafico_base64():
         if not respostas:
             return None
         
+        # ===== PREPARAÇÃO DOS DADOS =====
+        # Dicionários para contagem de transportes
+        transporte_chegada = {}
+        transporte_diario = {}
+        
+        # Dicionário para emissões por tipo de transporte
         emissoes_transporte = {transp: 0 for transp in EMISSOES_TRANSPORTE.keys()}
-        emissoes_tipo = {tipo: 0 for tipo in TIPOS_PARTICIPANTE}
+        
+        # Acumuladores para dados econômicos
+        gastos = {
+            'alimentacao': 0,
+            'equipamentos': 0,
+            'botes': 0,
+            'hospedagem': 0,
+            'transporte_chegada': 0,
+            'transporte_diario': 0
+        }
+        
+        total_respostas = len(respostas)
         
         for resposta in respostas:
-            transp = resposta.transporte_cidade
-            if transp in emissoes_transporte:
-                emissoes_transporte[transp] += float(resposta.emissao_total)
+            # Contagem de transportes (chegada)
+            transp_chegada = resposta.transporte_cidade
+            transporte_chegada[transp_chegada] = transporte_chegada.get(transp_chegada, 0) + 1
             
-            tipo = resposta.tipo_participante
-            if tipo in emissoes_tipo:
-                emissoes_tipo[tipo] += float(resposta.emissao_total)
-        
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 6))
-        fig.suptitle('Análise de Emissões de CO2 - Regata', fontsize=16, fontweight='bold')
-        
-        # Gráfico 1: Emissões por tipo de transporte
-        transportes_validos = [t for t in emissoes_transporte.keys() if emissoes_transporte[t] > 0]
-        valores_transp = [emissoes_transporte[t] for t in transportes_validos]
-        
-        if transportes_validos and any(valores_transp):
-    # Cores manualmente distribuídas
-            num_cores = len(transportes_validos)
-            cores1 = [plt.cm.Set3(i / max(num_cores, 1)) for i in range(num_cores)]
-            ax1.pie(valores_transp, labels=transportes_validos, autopct='%1.1f%%', colors=cores1)
-            ax1.set_title("Distribuição de Emissões por Tipo de Transporte")
-        
-        # Gráfico 2: Emissões por tipo de participante
-        tipos_validos = [t for t in TIPOS_PARTICIPANTE if emissoes_tipo[t] > 0]
-        valores_tipos = [emissoes_tipo[t] for t in tipos_validos]
-        
-        if tipos_validos:
-            num_cores = len(tipos_validos)
-            cores2 = [plt.cm.viridis(i / max(num_cores, 1)) for i in range(num_cores)]
-            bars = ax2.bar(tipos_validos, valores_tipos, color=cores2)
-            ax2.set_title("Emissões por Tipo de Participante")
-            ax2.set_ylabel("Emissão de CO2 (g)")
-            plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
+            # Contagem de transportes (diário)
+            transp_diario = resposta.transporte_local
+            transporte_diario[transp_diario] = transporte_diario.get(transp_diario, 0) + 1
             
-            for bar, valor in zip(bars, valores_tipos):
+            # Emissões por tipo de transporte (usando o transporte de chegada)
+            if transp_chegada in emissoes_transporte:
+                emissoes_transporte[transp_chegada] += float(resposta.emissao_total)
+            
+            # Acumular gastos econômicos
+            if resposta.custo_transporte:
+                # 🚗 Transporte de Chegada: multiplicado por 1.5
+                gastos['transporte_chegada'] += float(resposta.custo_transporte)*1.5
+            if resposta.custo_transporte_diario:
+                gastos['transporte_diario'] += float(resposta.custo_transporte_diario)
+            if resposta.gasto_alimentacao:
+                gastos['alimentacao'] += float(resposta.gasto_alimentacao)
+            if resposta.gasto_equipamentos:
+                gastos['equipamentos'] += float(resposta.gasto_equipamentos)
+            if resposta.gasto_botes:
+                gastos['botes'] += float(resposta.gasto_botes)
+            if hasattr(resposta, 'gasto_hospedagem') and resposta.gasto_hospedagem:
+                gastos['hospedagem'] += float(resposta.gasto_hospedagem)
+        
+        # ===== CRIAÇÃO DOS GRÁFICOS =====
+        # Layout 2 linhas e 2 colunas para 4 gráficos
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
+        fig.suptitle('Análise de Sustentabilidade e Impacto Econômico - Regata', 
+                    fontsize=16, fontweight='bold', y=0.98, color='#1a3b5d')
+        
+        # Palheta de cores personalizada: azul, verde e amarelo
+        palheta_cores = ["#1CE074", "#0B9A5F", "#026C26", "#27A8DC", "#2775E2", "#054976"]
+        
+        # ===== GRÁFICO 1: Transporte para CHEGAR =====
+        if transporte_chegada:
+            transportes_ord = sorted(transporte_chegada.items(), key=lambda x: x[1], reverse=True)
+            labels = [f"{t[0].capitalize()}" for t in transportes_ord]
+            valores = [t[1] for t in transportes_ord]
+            
+            cores_barras = [palheta_cores[i % len(palheta_cores)] for i in range(len(valores))]
+            
+            bars = ax1.bar(range(len(valores)), valores, color=cores_barras, 
+                          edgecolor='#2c3e50', linewidth=1.5, alpha=0.9)
+            ax1.set_xticks(range(len(valores)))
+            ax1.set_xticklabels(labels, rotation=45, ha='right', fontsize=9, fontweight='500')
+            
+            for bar, valor in zip(bars, valores):
                 height = bar.get_height()
-                if height > 0:
-                    ax2.text(bar.get_x() + bar.get_width()/2., height + 0.05,
-                            f'{valor:.2f}g', ha='center', va='bottom', fontsize=8)
+                ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                        f'{valor}', ha='center', va='bottom', fontsize=10, 
+                        fontweight='bold', color='#1a3b5d')
+            
+            ax1.set_title('Transporte mais utilizado para CHEGAR ao evento', 
+                         fontsize=12, fontweight='bold', pad=15, color='#1a3b5d')
+            ax1.set_ylabel('Número de participantes', fontsize=10, fontweight='500', color='#2c3e50')
+            ax1.grid(axis='y', alpha=0.2, linestyle='--', color='#95a5a6')
+            from matplotlib.ticker import MaxNLocator
+            ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
+            
+            # Remover spines
+            ax1.spines['top'].set_visible(False)
+            ax1.spines['right'].set_visible(False)
         
-        # Gráfico 3: Eficiência dos transportes
-        eficiencias = list(EMISSOES_TRANSPORTE.values())
-        transportes_efic = list(EMISSOES_TRANSPORTE.keys())
+        # ===== GRÁFICO 2: Transporte no DIA A DIA =====
+        if transporte_diario:
+            transportes_ord = sorted(transporte_diario.items(), key=lambda x: x[1], reverse=True)
+            labels = [f"{t[0].capitalize()}" for t in transportes_ord]
+            valores = [t[1] for t in transportes_ord]
+            
+            cores_barras = [palheta_cores[(i+2) % len(palheta_cores)] for i in range(len(valores))]
+            
+            bars = ax2.bar(range(len(valores)), valores, color=cores_barras,
+                          edgecolor='#2c3e50', linewidth=1.5, alpha=0.9)
+            ax2.set_xticks(range(len(valores)))
+            ax2.set_xticklabels(labels, rotation=45, ha='right', fontsize=9, fontweight='500')
+            
+            for bar, valor in zip(bars, valores):
+                height = bar.get_height()
+                ax2.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                        f'{valor}', ha='center', va='bottom', fontsize=10,
+                        fontweight='bold', color='#1a3b5d')
+            
+            ax2.set_title('Transporte mais utilizado no DIA A DIA do evento', 
+                         fontsize=12, fontweight='bold', pad=15, color='#1a3b5d')
+            ax2.set_ylabel('Número de participantes', fontsize=10, fontweight='500', color='#2c3e50')
+            ax2.grid(axis='y', alpha=0.2, linestyle='--', color='#95a5a6')
+            ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+            
+            ax2.spines['top'].set_visible(False)
+            ax2.spines['right'].set_visible(False)
         
-        bars = ax3.bar(transportes_efic, eficiencias, color='#FF9800')
-        ax3.set_title("Emissão por Tipo de Transporte")
-        ax3.set_ylabel("gCO2 por km")
-        ax3.set_xlabel("Tipo de Transporte")
-        plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45)
+        # ===== GRÁFICO 3: Distribuição de Emissões por Tipo de Transporte (PIZZA TRADICIONAL) =====
+        if any(emissoes_transporte.values()):
+            # Filtrar transportes com emissões > 0
+            transportes_validos = {k: v for k, v in emissoes_transporte.items() if v > 0}
+            
+            if transportes_validos:
+                labels = [k.capitalize() for k in transportes_validos.keys()]
+                valores = list(transportes_validos.values())
+                total_emissoes = sum(valores)
+                
+                # Ordenar por valor para melhor visualização
+                dados_ordenados = sorted(zip(labels, valores), key=lambda x: x[1], reverse=True)
+                labels = [d[0] for d in dados_ordenados]
+                valores = [d[1] for d in dados_ordenados]
+                
+                # Calcular percentuais para exibição
+                percentuais = [(v/total_emissoes)*100 for v in valores]
+                
+                # Usar cores da palheta
+                cores_pizza = [palheta_cores[i % len(palheta_cores)] for i in range(len(valores))]
+                
+                # Destaque para maior fatia (opcional - pode remover se preferir)
+                explode = [0.03 if v == max(valores) else 0 for v in valores]
+                
+                # GRÁFICO DE PIZZA TRADICIONAL (sem buraco no centro)
+                wedges, texts, autotexts = ax3.pie(
+                    valores, 
+                    labels=labels, 
+                    autopct=lambda pct: f'{pct:.1f}%\n({(pct/100)*total_emissoes:,.0f} g)',
+                    colors=cores_pizza,
+                    explode=explode,
+                    shadow=True,
+                    startangle=90,
+                    textprops={'fontsize': 8}
+                )
+                
+                # Formatação dos textos
+                for text in texts:
+                    text.set_fontsize(9)
+                    text.set_fontweight('500')
+                    text.set_color('#2c3e50')
+                
+                for autotext in autotexts:
+                    autotext.set_fontsize(7)
+                    autotext.set_color('white')
+                    autotext.set_fontweight('bold')
+                    autotext.set_bbox(dict(facecolor='#2c3e50', alpha=0.6, 
+                                          edgecolor='none', pad=1.5))
+                
+                # Título com total de emissões
+                ax3.set_title(f'Distribuição de Emissões por Tipo de Transporte\nTotal: {total_emissoes:,.0f} gCO₂', 
+                             fontsize=12, fontweight='bold', pad=15, color='#1a3b5d')
         
-        for bar, valor in zip(bars, eficiencias):
-            height = bar.get_height()
-            ax3.text(bar.get_x() + bar.get_width()/2., height + 0.05,
-                    f'{valor:.2f}g', ha='center', va='bottom')
+        # ===== GRÁFICO 4: Distribuição Econômica por Categoria =====
+        if any(gastos.values()):
+            categorias_validas = {k: v for k, v in gastos.items() if v > 0}
+            
+            if categorias_validas:
+                nomes_categorias = {
+                    'alimentacao': 'Alimentação',
+                    'equipamentos': 'Equipamentos',
+                    'botes': 'Aluguel de Botes',
+                    'hospedagem': 'Hospedagem',
+                    'transporte_chegada': 'Transporte (Chegada)',
+                    'transporte_diario': 'Transporte (Diário)'
+                }
+                
+                labels = [nomes_categorias[k] for k in categorias_validas.keys()]
+                valores = list(categorias_validas.values())
+                total_gastos = sum(valores)
+                
+                # Ordenar por valor
+                dados_ordenados = sorted(zip(labels, valores), key=lambda x: x[1], reverse=True)
+                labels = [d[0] for d in dados_ordenados]
+                valores = [d[1] for d in dados_ordenados]
+                
+                cores_pizza = [palheta_cores[(i+3) % len(palheta_cores)] for i in range(len(valores))]
+                
+                # Destaque para maior fatia
+                explode = [0.05 if v == max(valores) else 0 for v in valores]
+                
+                wedges, texts, autotexts = ax4.pie(
+                    valores, 
+                    labels=labels, 
+                    autopct=lambda pct: f'R$ {(pct/100)*total_gastos:,.0f}',
+                    colors=cores_pizza,
+                    explode=explode,
+                    shadow=True,
+                    startangle=90,
+                    textprops={'fontsize': 8}
+                )
+                
+                for text in texts:
+                    text.set_fontsize(9)
+                    text.set_fontweight('500')
+                    text.set_color('#2c3e50')
+                
+                for autotext in autotexts:
+                    autotext.set_fontsize(8)
+                    autotext.set_color('white')
+                    autotext.set_fontweight('bold')
+                    autotext.set_bbox(dict(facecolor='#2c3e50', alpha=0.5, 
+                                          edgecolor='none', pad=1))
+                
+                ax4.set_title(f'Distribuição Econômica por Categoria\nTotal: R$ {total_gastos:,.2f}', 
+                             fontsize=12, fontweight='bold', pad=15, color='#1a3b5d')
         
         plt.tight_layout()
         
+        # Salvar em buffer
         buffer = BytesIO()
-        plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+        plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100, 
+                   facecolor='white', edgecolor='none')
         buffer.seek(0)
         image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
         plt.close()
@@ -192,7 +380,11 @@ def gerar_grafico_base64():
         
     except Exception as e:
         print(f"Erro ao gerar gráfico: {e}")
+        import traceback
+        traceback.print_exc()
         return None
+
+
 
 # Funções de PDF
 def emoji_para_imagem(emoji, tamanho=12):
@@ -346,7 +538,7 @@ def gerar_pdf(registro):
             [
                 "Até a cidade do evento", 
                 registro['transporte_cidade'].capitalize(), 
-                f"{registro['distancia_cidade']} km", 
+                f"{registro['distancia_cidade']} km",
                 f"{emissao_principal:.2f}"
             ],
             [
@@ -355,7 +547,7 @@ def gerar_pdf(registro):
                 f"{registro['distancia_local']} km/dia × {registro['dias_evento']} dias", 
                 f"{emissao_local:.2f}"
             ],
-            ["TOTAL", "", "", f"<b>{registro['emissao_total']:.2f} gCO2</b>"]
+            ["TOTAL", "", "", f"{registro['emissao_total']:.2f} gCO2"]
         ]
         
         tabela_emissao = Table(detalhes_emissao, colWidths=[5.5*cm, 3*cm, 4*cm, 3.5*cm])
@@ -440,7 +632,7 @@ def gerar_pdf(registro):
         
         rodape = Paragraph(
             "Calculadora de Emissão de CO2 - Eventos Esportivos Sustentáveis<br/>" +
-            "Relatório gerado automaticamente - Juntos por um planeta mais verde!",
+            "Uma iniciativa da parceria entre CBVela e ETTA/UFF com o apoio do CNPq e Faperj para promover aconscientização ambiental em eventos esportivos",
             ParagraphStyle(
                 'Rodape', 
                 parent=estilo_normal, 
@@ -482,7 +674,7 @@ def gerar_pdf_simples(registro):
     p.drawString(100, 630, f"Transporte local: {registro['transporte_local']}")
     p.drawString(100, 610, f"Dias de evento: {registro['dias_evento']}")
     
-    p.drawString(100, 550, "Relatório gerado automaticamente")
+    p.drawString(100, 550, "Uma iniciativa da parceria entre CBVela e ETTA/UFF com o apoio do CNPq e Faperj para promover aconscientização ambiental em eventos esportivos")
     p.drawString(100, 530, "Calculadora de Emissões - Eventos Sustentáveis")
     
     p.showPage()
@@ -515,7 +707,22 @@ def submit():
         distancia_principal = float(dados_form['distancia_cidade'])
         transporte_principal = dados_form['transporte_cidade']
         emissao_principal = EMISSOES_TRANSPORTE.get(transporte_principal, 5.0) * distancia_principal
-        
+
+        custo_transporte = dados_form.get('custo_transporte', '')
+        if custo_transporte:
+            custo_transporte = float(custo_transporte)
+        else:
+            custo_transporte = None
+
+        custo_diario = dados_form.get('custo_transporte_diario', '')
+        if custo_diario and custo_diario.strip():
+            try:
+                custo_diario_valor = float(custo_diario)
+            except ValueError:
+                custo_diario_valor = None
+        else:
+            custo_diario_valor = None
+
         distancia_local = float(dados_form['distancia_local'])
         transporte_local = dados_form['transporte_local']
         dias_evento = int(dados_form['dias_evento'])
@@ -523,6 +730,27 @@ def submit():
         
         emissao_total = emissao_principal + emissao_local
         
+        # NOVOS: Processar campos de logística
+        def processar_campo_numerico(nome_campo):
+            valor = dados_form.get(nome_campo, '')
+            if valor and valor.strip():
+                try:
+                    return float(valor)
+                except ValueError:
+                    return None
+            return None
+        
+        # Processar todos os campos financeiros
+        custo_transporte = processar_campo_numerico('custo_transporte')
+        custo_diario_valor = processar_campo_numerico('custo_transporte_diario')
+        gasto_alimentacao_valor = processar_campo_numerico('gasto_alimentacao')      # NOVO
+        gasto_equipamentos_valor = processar_campo_numerico('gasto_equipamentos')    # NOVO
+        gasto_botes_valor = processar_campo_numerico('gasto_botes')                  # NOVO
+        gasto_hospedagem_valor = processar_campo_numerico('gasto_hospedagem')
+
+        pontos_turisticos = dados_form.get('pontos_turisticos', '').strip()
+        pontos_turisticos = pontos_turisticos if pontos_turisticos else None
+
         # Criar registro no banco
         with app.app_context():
             nova_resposta = RespostaEmissao(
@@ -531,9 +759,19 @@ def submit():
                 tipo_participante=tipo_participante,
                 transporte_cidade=transporte_principal,
                 distancia_cidade=distancia_principal,
+                custo_transporte=custo_transporte, 
                 transporte_local=transporte_local,
                 distancia_local=distancia_local,
                 dias_evento=dias_evento,
+                custo_transporte_diario=custo_diario_valor,
+
+                gasto_alimentacao=gasto_alimentacao_valor,
+                gasto_equipamentos=gasto_equipamentos_valor,
+                gasto_botes=gasto_botes_valor,
+                gasto_hospedagem=gasto_hospedagem_valor,
+                pontos_turisticos=pontos_turisticos,
+                
+
                 emissao_total=emissao_total
             )
             
@@ -571,9 +809,11 @@ def download_dados():
         si = StringIO()
         cw = csv.writer(si)
         cw.writerow(['ID', 'Email', 'Estado Origem', 'Tipo Participante', 
-                     'Transporte até a Cidade', 'Distância até a Cidade (km)', 
-                     'Transporte Local', 'Distância Local (km)', 'Dias de Evento', 
-                     'Emissão Total (gCO2)', 'Data Registro'])
+                     'Transporte até a Cidade', 'Distância até a Cidade (km)', 'Custo Transporte (R$)', 
+                     'Transporte Local', 'Distância Local (km)', 'Dias de Evento',
+                     'Custo Transporte Diário (R$)','Gasto Alimentação (R$)', 
+                     'Gasto Transporte Equipamentos (R$)', 'Gasto Aluguel Botes (R$)','Gasto Hospedagem (R$)',
+                     'Pontos Turísticos Visitados','Emissão Total (gCO2)','Data Registro'])
         
         for resposta in respostas:
             cw.writerow([
@@ -583,9 +823,17 @@ def download_dados():
                 resposta.tipo_participante,
                 resposta.transporte_cidade,
                 float(resposta.distancia_cidade),
+                float(resposta.custo_transporte) if resposta.custo_transporte else '',  
                 resposta.transporte_local,
                 float(resposta.distancia_local),
                 resposta.dias_evento,
+                float(resposta.custo_transporte_diario) if resposta.custo_transporte_diario else '',
+                float(resposta.gasto_alimentacao) if resposta.gasto_alimentacao else '',
+                float(resposta.gasto_equipamentos) if resposta.gasto_equipamentos else '',
+                float(resposta.gasto_botes) if resposta.gasto_botes else '',
+                float(resposta.gasto_hospedagem) if resposta.gasto_hospedagem else '',
+                resposta.pontos_turisticos if resposta.pontos_turisticos else '',
+                
                 float(resposta.emissao_total),
                 resposta.data_registro.strftime("%Y-%m-%d %H:%M:%S")
             ])

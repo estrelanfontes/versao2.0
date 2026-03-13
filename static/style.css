@@ -405,6 +405,105 @@ footer {
     gap: 15px;
 }
 
+/* Estilos para a seção de turismo */
+.turismo-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #17a2b8;
+}
+
+.pontos-lista ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.pontos-lista li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+}
+
+.pontos-lista li:before {
+    content: "📍";
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+
+.pontos-lista li:last-child {
+    border-bottom: none;
+}
+
+.avaliacao-turismo {
+    padding: 15px;
+    background-color: #fff3cd;
+    border-radius: 8px;
+    border: 1px solid #ffeaa7;
+}
+
+.avaliacao-badge {
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.badge.excelente {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.badge.bom {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #b8daff;
+}
+
+.badge.regular {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.badge.ruim {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.badge.neutro {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+/* Estilo para textarea específica */
+#pontos_turisticos {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    transition: border-color 0.3s;
+}
+
+#pontos_turisticos:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
 @media (min-width: 768px) {
     .actions {
         flex-direction: row;

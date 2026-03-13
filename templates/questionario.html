@@ -10,7 +10,6 @@
     <div class="container">
         <header>
             <h1>Questionário de Emissão de CO2</h1>
-            <p>Preencha as informações sobre seus deslocamentos para o evento esportivo</p>
         </header>
         
         <form action="/submit" method="post" class="questionario-form">
@@ -57,9 +56,9 @@
                 </div>
             </div>
             
-            <div class="form-section"><!-- ATUALIZADO -->
+            <div class="form-section"><!-- ATUALIZADO h3 para p no subtitulo-->
                 <h2>Deslocamento da sua residência até o local de hospedagem durante a participação no evento</h2> 
-                <h3>(Caso você resida nas proximidades do evento e não tenha realizado viagem, selecione “Outros” e insira “zero” na distância percorrida.)</h3>
+                <p>(Caso você resida nas proximidades do evento e não tenha realizado viagem, selecione “Outros” e insira “zero” na distância percorrida.)</p>
 
                 <div class="form-group">
                     <br>
@@ -76,6 +75,15 @@
                     <label for="distancia_cidade">Distância média total percorrida (ida e volta, em km):</label>
                     <input type="number" id="distancia_cidade" name="distancia_cidade" min="0" step="0.1" required>
                 </div>
+            <!-- NOVA PERGUNTA -->
+                <div class="form-group">
+                    <label for="custo_transporte">Preço do transporte até o local de hospedagem (em R$):</label>
+                    <input type="number" id="custo_transporte" name="custo_transporte" min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Valor aproximado em reais (deixe em branco se não aplicável)
+                    </small>
+                </div>
+            
             </div>
             
             <div class="form-section">
@@ -100,7 +108,85 @@
                     <label for="dias_evento">Quantidade de dias em que realizou esse percurso: </label>
                     <input type="number" id="dias_evento" name="dias_evento" min="1" required>
                 </div>
+
+
+                <div class="form-group">
+                    <label for="custo_transporte_diario">Gasto total com transporte diário durante o evento (em R$):</label>
+                    <input type="number" id="custo_transporte_diario" name="custo_transporte_diario" 
+                        min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Valor total aproximado em reais para todos os dias (deixe em branco se não aplicável)
+                    </small>
+                </div>
             </div>
+
+
+            <!-- NOVA SEÇÃO: LOGÍSTICAS DO EVENTO -->
+            <div class="form-section">
+                <h2>Logísticas do evento</h2>
+                <p>Informações sobre custos adicionais durante a participação no evento.</p>
+                
+
+                <!-- Alimentação -->
+                <div class="form-group">
+                    <br>
+                    <label for="gasto_alimentacao">Gasto total de alimentação durante o evento (em R$):</label>
+                    <input type="number" id="gasto_alimentacao" name="gasto_alimentacao" 
+                        min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Inclua refeições, lanches e bebidas durante todos os dias do evento
+                    </small>
+                </div>
+                
+                <!-- Transporte de equipamentos -->
+                <div class="form-group">
+                    <label for="gasto_equipamentos">Gasto total com transporte de equipamentos (em R$):</label>
+                    <input type="number" id="gasto_equipamentos" name="gasto_equipamentos" 
+                        min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Frete, transporte especial ou custos com deslocamento de equipamentos esportivos
+                    </small>
+                </div>
+                
+                <!-- Aluguel de botes -->
+                <div class="form-group">
+                    <label for="gasto_botes">Gasto com aluguel de botes (em R$):</label>
+                    <input type="number" id="gasto_botes" name="gasto_botes" 
+                        min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Caso tenha alugado botes, barcos ou outros equipamentos náuticos
+                    </small>
+                </div>
+            
+                <!-- Hospedagem -->            
+                <div class="form-group">
+                    <label for="gasto_hospedagem">Gasto total com hospedagem durante o evento (em R$):</label>
+                    <input type="number" id="gasto_hospedagem" name="gasto_hospedagem" 
+                        min="0" step="0.01" placeholder="0.00">
+                    <small style="color: #666; font-size: 0.9em;">
+                        Valor total gasto com hotel, pousada, Airbnb ou outros tipos de acomodação durante todos os dias do evento
+                    </small>
+                </div>
+            </div>
+
+            <!-- NOVA SEÇÃO: PONTOS TURÍSTICOS -->
+            <div class="form-section">
+                <h2>Experiência Turística</h2>
+                <p class="section-description">
+                    Ajude-nos a entender o impacto turístico do evento na região.
+                </p>
+                
+                <div class="form-group">
+                    <br>
+                    <label for="pontos_turisticos">Informe os pontos turísticos visitados durante o evento:</label>
+                    <textarea id="pontos_turisticos" name="pontos_turisticos" 
+                            rows="4" 
+                            placeholder="Ex: Praia do Forte, Centro Histórico, Mirante da Cidade, Museu Náutico..."></textarea>
+                    <small style="color: #666; font-size: 0.9em;">
+                        Liste os locais turísticos que você ou sua equipe visitaram durante o evento. 
+                        Separe com vírgulas ou liste em linhas diferentes.
+                    </small>
+                </div>
             
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Calcular Emissão</button>
