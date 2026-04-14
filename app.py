@@ -102,13 +102,13 @@ class RespostaEmissao(db.Model):
 
 # Dados de emissão por transporte (gCO2/km)
 EMISSOES_TRANSPORTE = {
-    "carro": 96.6,
+    "carro": 97.8,
     "ônibus": 67,
-    "avião": 43,
-    "barca": 59,
+    "avião": 42,
+    "barca": 60.3,
     "bicicleta/a pé": 0,
     "moto": 80.5,
-    "trem": 21,
+    "trem": 20.9,
     "outros": 50
 }
 
