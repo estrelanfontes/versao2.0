@@ -49,11 +49,16 @@ versao2.0/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ## Instalação e execução
-``bash
+```bash
 git clone https://github.com/estrelanfontes/versao2.0.git
 cd versao2.0
 pip install -r requirements.txt
 python app.py
+```
 Server: http://127.0.0.1:5000
 
-## License
+## Licença
+Distribuído sob a licença Apache 2.0. Veja `LICENSE` para mais informações.
+---
+
+© 2026 Estrela Nascimento Fontes | SPDX-License-Identifier: Apache-2.0
