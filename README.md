@@ -59,6 +59,5 @@ Server: http://127.0.0.1:5000
 
 ## Licença
 Distribuído sob a licença Apache 2.0. Veja `LICENSE` para mais informações.
----
 
 © 2026 Estrela Nascimento Fontes | SPDX-License-Identifier: Apache-2.0
