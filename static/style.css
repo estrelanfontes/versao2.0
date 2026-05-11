@@ -511,3 +511,53 @@ footer {
         flex-wrap: wrap;
     }
 }/* === === */
+/* Estilos para legendas em inglês */
+.text-block {
+    margin-bottom: 0.5em;
+    position: relative;
+}
+
+.en {
+    display: block;
+    font-size: 0.75em;
+    color: #bab7b7;
+    font-style: italic;
+    margin-top: 0.1em;
+    margin-bottom: 0.3em;
+    padding-left: 0.5em;
+    border-left: 2px solid #3498db;
+    line-height: 1.3;
+}
+
+/* Ajustes para elementos específicos */
+h1 .en, h2 .en, h3 .en {
+    font-size: 0.6em;
+    margin-top: 0.2em;
+}
+
+.btn-primary .en, .btn-secondary .en, .btn-download .en {
+    display: block;
+    font-size: 0.7em;
+    opacity: 0.9;
+    margin-top: 0.2em;
+}
+
+/* Para formulários */
+.form-group label .en {
+    font-size: 0.7em;
+    font-weight: normal;
+    margin-top: 0.1em;
+    display: block;
+}
+
+/* Para listas */
+.detalhes-emissao li .en, .comparacao li .en {
+    font-size: 0.8em;
+    margin-left: 0.5em;
+}
+
+/* Remove os marcadores (bullets/pins) da lista de detalhes */
+.detalhes-emissao ul {
+    list-style-type: none;
+    padding-left: 0;
+}

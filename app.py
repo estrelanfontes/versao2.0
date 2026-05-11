@@ -14,16 +14,166 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import cm, mm
-
-# Configuração ROBUSTA com fallback
+import matplotlib
+matplotlib.use('Agg') 
+import matplotlib.pyplot as plt
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-#Etapa Render
+
+translations = {
+    "Calculadora de Emissões de CO₂ em Deslocamentos para Eventos Náuticos": "CO₂ Emissions Calculator for Travel to Nautical Events",
+    "Faça a diferença pelo planeta": "Make a difference for the planet",
+    "Ao preencher o questionário, nossa calculadora conseguirá estimar suas emissões de carbono nos deslocamentos": "By filling out the questionnaire, our calculator will be able to estimate your carbon emissions from travel",
+    "Iniciar Questionário": "Start Questionnaire",
+    "Por que calcular?": "Why calculate?",
+    "O transporte é responsável por cerca de 24% das emissões globais de CO2. Suas escolhas fazem diferença!": "Transport is responsible for about 24% of global CO2 emissions. Your choices make a difference!",
+    "Como funciona?": "How does it work?",
+    "Responda algumas perguntas sobre seus deslocamentos e veja gráficos em tempo real": "Answer a few questions about your travel and see real-time graphs",
+    "Participe da mudança": "Take part in the change",
+    "Seus dados ajudam a entender padrões e promover eventos mais sustentáveis": "Your data helps understand patterns and promote more sustainable events",
+    "Uma iniciativa da parceria entre CBVela e ETTA/UFF com o apoio do CNPq e Faperj para promover a conscientização ambiental em eventos esportivos": "An initiative of the partnership between CBVela and ETTA/UFF with the support of CNPq and Faperj to promote environmental awareness in sports events",
+
+
+    "Questionário de Emissões de CO₂": "CO₂ Emissions Questionnaire",
+    "Preencha os dados abaixo para calcular o impacto ambiental do seu deslocamento.": "Fill in the data below to calculate the environmental impact of your travel.",
+    "Email": "Email",
+    "País de origem": "Country of origin",
+    "Tipo de participante": "Participant type",
+    "Transporte usado para chegar à cidade do evento": "Transport used to arrive at the event city",
+    "Distância percorrida (km)": "Distance traveled (km)",
+    "Custo com transporte (R$, opcional)": "Transport cost (R$, optional)",
+    "Transporte usado no dia a dia do evento": "Transport used daily during the event",
+    "Distância percorrida por dia (km)": "Distance traveled per day (km)",
+    "Número de dias de participação": "Number of days of participation",
+    "Custo com transporte diário (R$, opcional)": "Daily transport cost (R$, optional)",
+    "Gasto com alimentação (R$)": "Food expenses (R$)",
+    "Gasto com transporte de equipamentos (R$)": "Equipment transport expenses (R$)",
+    "Gasto com aluguel de botes (R$)": "Boat rental expenses (R$)",
+    "Gasto com hospedagem (R$)": "Accommodation expenses (R$)",
+    "Pontos turísticos visitados (opcional)": "Tourist attractions visited (optional)",
+    "Calcular Emissões": "Calculate Emissions",
+    "Seus Resultados de Emissão de CO₂": "Your CO₂ Emission Results",
+    "Dados do Participante": "Participant Data",
+    "Emissão total estimada": "Estimated total emission",
+    "Detalhamento": "Breakdown",
+    "Transporte até a cidade:": "Transport to the city:",
+    "Transporte local (por dia):": "Local transport (per day):",
+    "Análise do Evento": "Event Analysis",
+    "Baixar Relatório em PDF": "Download PDF Report",
+    "Responder novamente": "Answer again",
+    "Página inicial": "Home page",
+    "Obrigado por contribuir com a sustentabilidade dos eventos náuticos!": "Thank you for contributing to the sustainability of nautical events!",
+    "← Voltar para a página inicial": "← Back to home page",
+
+
+    "Resultados da sua Emissão de CO2": "Your CO2 Emission Results",
+    "Veja o impacto ambiental dos seus deslocamentos": "See the environmental impact of your travel",
+    "Resumo da Sua Emissão": "Your Emission Summary",
+    "Total de emissões de carbono": "Total carbon emissions",
+    "Detalhes:": "Details:",
+    "Local de Origem:": "Place of Origin:",
+    "Estrangeiro": "Foreign",
+    "Tipo:": "Type:",
+    "Transporte até a cidade:": "Transport to the city:",
+    "Transporte local:": "Local transport:",
+    "Dias de evento:": "Event days:",
+    "Data:": "Date:",
+    "O que isso significa?": "What does this mean?",
+    "Sua emissão de": "Your emission of",
+    "equivale a:": "is equivalent to:",
+    "árvores absorvendo CO2 por um ano": "trees absorbing CO2 for one year",
+    "Estatísticas Coletivas": "Collective Statistics",
+    "Gráficos atualizados com todas as respostas recebidas:": "Charts updated with all received answers:",
+    "Dicas para Reduzir Sua Emissão:": "Tips to Reduce Your Emission:",
+    "Prefira transportes públicos sempre que possível": "Prefer public transport whenever possible",
+    "Considere a carona solidária para eventos": "Consider ride sharing for events",
+    "Para distâncias curtas, use bicicleta ou caminhe": "For short distances, use a bicycle or walk",
+    "Compense suas emissões com programas de reflorestamento": "Offset your emissions with reforestation programs",
+    "Realizar Novo Cálculo": "Perform New Calculation",
+    "Página Inicial": "Home Page",
+    "Baixar Informações PDF": "Download PDF Information",
+    "Juntos podemos promover eventos esportivos mais sustentáveis!": "Together we can promote more sustainable sports events!",
+
+    "Selecione seu estado de origem": "--Select your state of origin",
+    "Selecione seu tipo de participação": "--Select your participant type",
+    "Selecione o transporte utilizado": "--Select the transport used",
+    "Principal meio de transporte utilizado:": "Main means of transport used:",
+
+    # ========== TIPOS DE TRANSPORTE ==========
+    "Carro": "--Car",
+    "Ônibus": "--Bus",
+    "Avião": "--Plane",
+    "Barca": "--Ferry",
+    "Bicicleta/a pé": "--Bicycle/Walking",
+    "Moto": "--Motorcycle",
+    "Trem": "--Train",
+    "Outros": "--Other",
+    
+    # ========== TIPOS DE PARTICIPANTE ==========
+    "Velejador(a)": "--Sailor",
+    "Técnico/Técnica": "--Coach",
+    "Acompanhante do atleta": "--Athlete Guest ",
+    "Comissão de regata": "--Race Committee",
+    "Prestador/Prestadora de serviço": "--Service provider",
+    "Organização": "--Staff",
+    "Outro": "--Other",
+
+
+
+    "País de Origem:": "Country of Origin:",
+    "Selecione seu país de origem": " --Select your country of origin",
+    "País": "Country",
+    "País de Origem": "Country of Origin",
+    "Estrangeiro": "International",
+
+
+    "Tipo de Deslocamento": "Trip Type",
+    "Transporte": "Transport",
+    "Distância": "Distance",
+    "Emissão (kgCO2e)": "Emissions (kgCO2e)",
+    "Até a cidade do evento": "To the event city",
+    "Deslocamento local": "Local commute",
+    "TOTAL": "TOTAL",
+    
+
+    "Equivalência": "Equivalence",
+    "Valor Aproximado": "Approximate Value",
+    "Árvores para absorver em 1 ano": "Trees to absorb in 1 year",
+    "Horas de lâmpada LED (60W)": "Hours of LED bulb (60W)",
+    "Emissão diária média brasileira*": "Average daily Brazilian emission*",
+    "árvores": "trees",
+    "horas": "hours",
+
+
+        "Local de Origem:": "Place of Origin:",
+    "Tipo de Participante:": "Participant Type:",
+    "Email:": "Email:",
+    "Estrangeiro": "International",
+    
+    # Recomendações
+    "🏨 Escolha acomodações próximas ao local do evento, reduzindo a necessidade de transporte motorizado": 
+        "🏨 Choose accommodations close to the event venue, reducing the need for motorized transport",
+    "🚶 Para distâncias curtas, opte por caminhar ou pedalar, formas ativas e sustentáveis de locomoção que também favorecem a saúde e o bem-estar": 
+        "🚶 For short distances, choose walking or cycling, active and sustainable forms of mobility that also promote health and well-being",
+    "🌱 Prefira transportes públicos ou coletivos para deslocamentos sempre que possível": 
+        "🌱 Prefer public or collective transportation whenever possible",
+    "🚗 Organize caronas solidárias com outros participantes, otimizando o uso dos veículos e diminuindo o número de deslocamentos individuais": 
+        "🚗 Organize carpooling with other participants, optimizing vehicle use and reducing the number of individual trips",
+    "📅 Planeje seus deslocamentos com antecedência para evitar horários de tráfego intenso e, consequentemente, o aumento do consumo de combustível": 
+        "📅 Plan your trips in advance to avoid peak traffic times and consequently reduce fuel consumption",
+    "💡 Dê preferência a veículos elétricos ou híbridos, quando disponíveis, para minimizar o impacto ambiental dos deslocamentos": 
+        "💡 Prefer electric or hybrid vehicles when available to minimize the environmental impact of travel",
+    "🌳 Compense emissões participando de programas de reflorestamento ou outras iniciativas ambientais reconhecidas": 
+        "🌳 Compensate emissions by participating in reforestation programs or other recognized environmental initiatives"
+}
+
+
+
+
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    # PRODUÇÃO (Render) - Converte postgres:// para postgresql:// se necessário
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -46,13 +196,15 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-# SEU MODELO ORIGINAL (mantenha igual)
+
 class RespostaEmissao(db.Model):
     __tablename__ = 'respostas_emissao'
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False)
-    estado_origem = db.Column(db.String(100), nullable=False)
+    pais_origem_pt = db.Column(db.String(100), nullable=False)
+    pais_origem_en = db.Column(db.String(100), nullable=False)
+  #  estado_origem = db.Column(db.String(100), nullable=False)
     tipo_participante = db.Column(db.String(50), nullable=False)
     transporte_cidade = db.Column(db.String(50), nullable=False)
     distancia_cidade = db.Column(db.Numeric(10, 2), nullable=False)
@@ -62,24 +214,24 @@ class RespostaEmissao(db.Model):
     dias_evento = db.Column(db.Integer, nullable=False)
     custo_transporte_diario = db.Column(db.Numeric(10, 2), nullable=True)
 
-        # NOVOS CAMPOS: Logísticas do evento
-    gasto_alimentacao = db.Column(db.Numeric(10, 2), nullable=True)      # Alimentação
-    gasto_equipamentos = db.Column(db.Numeric(10, 2), nullable=True)     # Transporte equipamentos
-    gasto_botes = db.Column(db.Numeric(10, 2), nullable=True)            # Aluguel de botes
-    gasto_hospedagem = db.Column(db.Numeric(10, 2), nullable=True)       # NOVO: Hospedagem
+    gasto_alimentacao = db.Column(db.Numeric(10, 2), nullable=True)      
+    gasto_equipamentos = db.Column(db.Numeric(10, 2), nullable=True)    
+    gasto_botes = db.Column(db.Numeric(10, 2), nullable=True)            
+    gasto_hospedagem = db.Column(db.Numeric(10, 2), nullable=True)       
 
-    # NOVOS CAMPOS: Pontos turísticos
-    pontos_turisticos = db.Column(db.Text, nullable=True)           # Descrição dos pontos
+    
+    pontos_turisticos = db.Column(db.Text, nullable=True)          
 
     emissao_total = db.Column(db.Numeric(10, 2), nullable=False)
-    data_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    #created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
         return {
             'id': self.id,
             'email': self.email,
-            'estado_origem': self.estado_origem,
+#           'estado_origem': self.estado_origem,
+            'pais_origem_pt': self.pais_origem_pt,
+            'pais_origem_en': self.pais_origem_en,
             'tipo_participante': self.tipo_participante,
             'transporte_cidade': self.transporte_cidade,
             'distancia_cidade': float(self.distancia_cidade),
@@ -97,7 +249,6 @@ class RespostaEmissao(db.Model):
             'pontos_turisticos': self.pontos_turisticos,
 
             'emissao_total': float(self.emissao_total),
-            'data': self.data_registro.strftime("%Y-%m-%d %H:%M:%S")
         }
 
 # Dados de emissão por transporte (gCO2/km)
@@ -114,7 +265,7 @@ EMISSOES_TRANSPORTE = {
 
 # Lista de tipos de participantes
 TIPOS_PARTICIPANTE = [
-    "Velejador/Velejadora",
+    "Velejador(a)",
     "Técnico/Técnica",
     "Acompanhante do atleta", 
     "Comissão de regata",
@@ -134,7 +285,85 @@ ESTADOS_BRASIL = [
     "Não se aplica (estrangeiro)"
 ]
 
-# Função para gerar gráfico 
+
+# Listas de países (português e inglês)
+PAISES_PORTUGUES = [
+    "Afeganistão", "África do Sul", "Albânia", "Alemanha", "Andorra", "Angola", 
+    "Antígua e Barbuda", "Arábia Saudita", "Argélia", "Argentina", "Armênia", 
+    "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bahrein", "Bangladesh", 
+    "Barbados", "Bélgica", "Belize", "Benim", "Bielorrússia", "Bolívia", 
+    "Bósnia e Herzegovina", "Botsuana", "Brasil", "Brunei", "Bulgária", 
+    "Burkina Faso", "Burundi", "Butão", "Cabo Verde", "Camarões", "Camboja", 
+    "Canadá", "Catar", "Cazaquistão", "Chade", "Chile", "China", "Chipre", 
+    "Colômbia", "Comores", "Congo (Congo-Brazzaville)", "Coreia do Norte", 
+    "Coreia do Sul", "Costa do Marfim", "Costa Rica", "Croácia", "Cuba", 
+    "Dinamarca", "Djibouti", "Dominica", "Egito", "El Salvador", 
+    "Emirados Árabes Unidos", "Equador", "Eritreia", "Eslováquia", "Eslovênia", 
+    "Espanha", "Essuatíni", "Estados Unidos", "Estônia", "Etiópia", "Fiji", 
+    "Filipinas", "Finlândia", "França", "Gabão", "Gâmbia", "Gana", "Geórgia", 
+    "Granada", "Grécia", "Guatemala", "Guiana", "Guiné", "Guiné Equatorial", 
+    "Guiné-Bissau", "Haiti", "Holanda (Países Baixos)", "Honduras", "Hungria", 
+    "Iêmen", "Ilhas Marshall", "Ilhas Salomão", "Índia", "Indonésia", "Irã", 
+    "Iraque", "Irlanda", "Islândia", "Israel", "Itália", "Jamaica", "Japão", 
+    "Jordânia", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letônia", "Líbano", 
+    "Libéria", "Líbia", "Liechtenstein", "Lituânia", "Luxemburgo", 
+    "Macedônia do Norte", "Madagascar", "Malásia", "Malawi", "Maldivas", "Mali", 
+    "Malta", "Marrocos", "Maurício", "Mauritânia", "México", "Micronésia", 
+    "Moçambique", "Moldávia", "Mônaco", "Mongólia", "Montenegro", 
+    "Myanmar (Birmânia)", "Namíbia", "Nauru", "Nepal", "Nicarágua", "Níger", 
+    "Nigéria", "Noruega", "Nova Zelândia", "Omã", "Palau", "Palestina (Estado da)", 
+    "Panamá", "Papua-Nova Guiné", "Paquistão", "Paraguai", "Peru", "Polônia", 
+    "Portugal", "Quênia", "Quirguistão", "Reino Unido", "República Centro-Africana", 
+    "República Democrática do Congo", "República Dominicana", "República Tcheca", 
+    "Romênia", "Ruanda", "Rússia", "Samoa", "Santa Lúcia", "São Cristóvão e Névis", 
+    "São Marinho", "São Tomé e Príncipe", "São Vicente e Granadinas", "Seicheles", 
+    "Senegal", "Serra Leoa", "Sérvia", "Singapura", "Síria", "Somália", "Sri Lanka", 
+    "Sudão", "Sudão do Sul", "Suécia", "Suíça", "Suriname", "Tailândia", 
+    "Tajiquistão", "Tanzânia", "Timor-Leste", "Togo", "Tonga", "Trinidad e Tobago", 
+    "Tunísia", "Turcomenistão", "Turquia", "Tuvalu", "Ucrânia", "Uganda", 
+    "Uruguai", "Uzbequistão", "Vanuatu", "Vaticano (Santa Sé)", "Venezuela", 
+    "Vietnã", "Zâmbia", "Zimbábue"
+]
+
+PAISES_INGLES = [
+"--Afghanistan", "--South Africa", "--Albania", "--Germany", "--Andorra", "--Angola", "--Antigua and Barbuda", 
+"--Saudi Arabia", "--Algeria", "--Argentina", "--Armenia", "--Australia", "--Austria", "--Azerbaijan", "--Bahamas", 
+"--Bahrain", "--Bangladesh", "--Barbados", "--Belgium", "--Belize", "--Benin", "--Belarus", "--Bolivia",
+ "--Bosnia and Herzegovina", "--Botswana", "--Brazil", "--Brunei", "--Bulgaria", "--Burkina Faso", "--Burundi",
+   "--Bhutan", "--Cabo Verde", "--Cameroon", "--Cambodia", "--Canada", "--Qatar", "--Kazakhstan", "--Chad", "--Chile",
+ "--China", "--Cyprus", "--Colombia", "--Comoros", "--Congo (Congo-Brazzaville)", "--North Korea", "--South Korea",
+"--Côte d'Ivoire", "--Costa Rica", "--Croatia", "--Cuba", "--Denmark", "--Djibouti", "--Dominica", "--Egypt", "--El Salvador",
+"--United Arab Emirates", "--Ecuador", "--Eritrea", "--Slovakia", "--Slovenia", "--Spain", "--Eswatini", "--United States", 
+"--Estonia", "--Ethiopia", "--Fiji", "--Philippines", "--Finland", "--France", "--Gabon", "--Gambia", "--Ghana", "--Georgia", 
+"--Grenada", "--Greece", "--Guatemala", "--Guyana", "--Guinea", "--Equatorial Guinea", "--Guinea-Bissau", "--Haiti", 
+"--Netherlands", "--Honduras", "--Hungary", "--Yemen", "--Marshall Islands", "--Solomon Islands", "--India", "--Indonesia", 
+"--Iran", "--Iraq", "--Ireland", "--Iceland", "--Israel", "--Italy", "--Jamaica", "--Japan", "--Jordan", "--Kiribati", 
+"--Kuwait", "--Laos", "--Lesotho", "--Latvia", "--Lebanon", "--Liberia", "--Libya", "--Liechtenstein", "--Lithuania", 
+"--Luxembourg", "--North Macedonia", "--Madagascar", "--Malaysia", "--Malawi", "--Maldives", "--Mali", "--Malta", "--Morocco", 
+"--Mauritius", "--Mauritania", "--Mexico", "--Micronesia", "--Mozambique", "--Moldova", "--Monaco", "--Mongolia", 
+"--Montenegro", "--Myanmar (Burma)", "--Namibia", "--Nauru", "--Nepal", "--Nicaragua", "--Niger", "--Nigeria", "--Norway", 
+"--New Zealand", "--Oman", "--Palau", "--Palestine (State of)", "--Panama", "--Papua New Guinea", "--Pakistan", "--Paraguay", 
+"--Peru", "--Poland", "--Portugal", "--Kenya", "--Kyrgyzstan", "--United Kingdom", "--Central African Republic", 
+"--Democratic Republic of the Congo", "--Dominican Republic", "--Czechia (Czech Republic)", "--Romania", "--Rwanda", "--Russia", 
+"--Samoa", "--Saint Lucia", "--Saint Kitts and Nevis", "--San Marino", "--Sao Tome and Principe", 
+"--Saint Vincent and the Grenadines", "--Seychelles", "--Senegal", "--Sierra Leone", "--Serbia", "--Singapore", "--Syria", 
+"--Somalia", "--Sri Lanka", "--Sudan", "--South Sudan", "--Sweden", "--Switzerland", "--Suriname", "--Thailand", "--Tajikistan", 
+"--Tanzania", "--Timor-Leste", "--Togo", "--Tonga", "--Trinidad and Tobago", "--Tunisia", "--Turkmenistan", "--Turkey", 
+"--Tuvalu", "--Ukraine", "--Uganda", "--Uruguay", "--Uzbequistão", "--Vanuatu", "--Holy See (Vatican City)", "--Venezuela", 
+"--Vietnam", "--Zambia", "--Zimbabwe"
+]
+
+PAISES_DICT = dict(zip(PAISES_PORTUGUES, PAISES_INGLES))
+
+for pt, en in PAISES_DICT.items():
+    translations[pt] = en
+
+
+
+
+
+
+
 def gerar_grafico_base64():
     """Gera 4 gráficos: transportes (chegada/diário), emissões por transporte e econômico"""
     try:
@@ -145,11 +374,9 @@ def gerar_grafico_base64():
             return None
         
         # ===== PREPARAÇÃO DOS DADOS =====
-        # Dicionários para contagem de transportes
         transporte_chegada = {}
         transporte_diario = {}
         
-        # Dicionário para emissões por tipo de transporte
         emissoes_transporte = {transp: 0 for transp in EMISSOES_TRANSPORTE.keys()}
         
         # Acumuladores para dados econômicos
@@ -180,20 +407,19 @@ def gerar_grafico_base64():
             # Acumular gastos econômicos
             if resposta.custo_transporte:
                 # 🚗 Transporte de Chegada: multiplicado por 1.5
-                gastos['transporte_chegada'] += float(resposta.custo_transporte)*1.5
+                gastos['transporte_chegada'] += float(resposta.custo_transporte)
             if resposta.custo_transporte_diario:
-                gastos['transporte_diario'] += float(resposta.custo_transporte_diario)
+                gastos['transporte_diario'] += float(resposta.custo_transporte_diario)*1.5
             if resposta.gasto_alimentacao:
-                gastos['alimentacao'] += float(resposta.gasto_alimentacao)
+                gastos['alimentacao'] += float(resposta.gasto_alimentacao)*1.5
             if resposta.gasto_equipamentos:
-                gastos['equipamentos'] += float(resposta.gasto_equipamentos)
+                gastos['equipamentos'] += float(resposta.gasto_equipamentos)*1.5
             if resposta.gasto_botes:
-                gastos['botes'] += float(resposta.gasto_botes)
+                gastos['botes'] += float(resposta.gasto_botes)*1.5
             if hasattr(resposta, 'gasto_hospedagem') and resposta.gasto_hospedagem:
-                gastos['hospedagem'] += float(resposta.gasto_hospedagem)
+                gastos['hospedagem'] += float(resposta.gasto_hospedagem)*1.5
         
         # ===== CRIAÇÃO DOS GRÁFICOS =====
-        # Layout 2 linhas e 2 colunas para 4 gráficos
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
         fig.suptitle('Análise de Sustentabilidade e Impacto Econômico - Regata', 
                     fontsize=16, fontweight='bold', y=0.98, color='#1a3b5d')
@@ -227,7 +453,6 @@ def gerar_grafico_base64():
             from matplotlib.ticker import MaxNLocator
             ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
             
-            # Remover spines
             ax1.spines['top'].set_visible(False)
             ax1.spines['right'].set_visible(False)
         
@@ -261,7 +486,6 @@ def gerar_grafico_base64():
         
         # ===== GRÁFICO 3: Distribuição de Emissões por Tipo de Transporte (PIZZA TRADICIONAL) =====
         if any(emissoes_transporte.values()):
-            # Filtrar transportes com emissões > 0
             transportes_validos = {k: v for k, v in emissoes_transporte.items() if v > 0}
             
             if transportes_validos:
@@ -269,25 +493,20 @@ def gerar_grafico_base64():
                 valores = list(transportes_validos.values())
                 total_emissoes = sum(valores)
                 
-                # Ordenar por valor para melhor visualização
                 dados_ordenados = sorted(zip(labels, valores), key=lambda x: x[1], reverse=True)
                 labels = [d[0] for d in dados_ordenados]
                 valores = [d[1] for d in dados_ordenados]
                 
-                # Calcular percentuais para exibição
                 percentuais = [(v/total_emissoes)*100 for v in valores]
                 
-                # Usar cores da palheta
                 cores_pizza = [palheta_cores[i % len(palheta_cores)] for i in range(len(valores))]
                 
-                # Destaque para maior fatia (opcional - pode remover se preferir)
                 explode = [0.03 if v == max(valores) else 0 for v in valores]
                 
-                # GRÁFICO DE PIZZA TRADICIONAL (sem buraco no centro)
                 wedges, texts, autotexts = ax3.pie(
                     valores, 
                     labels=labels, 
-                    autopct=lambda pct: f'{pct:.1f}%\n({(pct/100)*total_emissoes:,.0f} g)',
+                    autopct=lambda pct: f'{pct:.1f}%\n({(pct/100)*total_emissoes:,.0f} kg)',
                     colors=cores_pizza,
                     explode=explode,
                     shadow=True,
@@ -308,8 +527,7 @@ def gerar_grafico_base64():
                     autotext.set_bbox(dict(facecolor='#2c3e50', alpha=0.6, 
                                           edgecolor='none', pad=1.5))
                 
-                # Título com total de emissões
-                ax3.set_title(f'Distribuição de Emissões por Tipo de Transporte\nTotal: {total_emissoes:,.0f} gCO₂', 
+                ax3.set_title(f'Distribuição de Emissões por Tipo de Transporte\nTotal: {total_emissoes:,.0f} kgCO₂', 
                              fontsize=12, fontweight='bold', pad=15, color='#1a3b5d')
         
         # ===== GRÁFICO 4: Distribuição Econômica por Categoria =====
@@ -330,14 +548,12 @@ def gerar_grafico_base64():
                 valores = list(categorias_validas.values())
                 total_gastos = sum(valores)
                 
-                # Ordenar por valor
                 dados_ordenados = sorted(zip(labels, valores), key=lambda x: x[1], reverse=True)
                 labels = [d[0] for d in dados_ordenados]
                 valores = [d[1] for d in dados_ordenados]
                 
                 cores_pizza = [palheta_cores[(i+3) % len(palheta_cores)] for i in range(len(valores))]
                 
-                # Destaque para maior fatia
                 explode = [0.05 if v == max(valores) else 0 for v in valores]
                 
                 wedges, texts, autotexts = ax4.pie(
@@ -368,7 +584,6 @@ def gerar_grafico_base64():
         
         plt.tight_layout()
         
-        # Salvar em buffer
         buffer = BytesIO()
         plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100, 
                    facecolor='white', edgecolor='none')
@@ -386,7 +601,6 @@ def gerar_grafico_base64():
 
 
 
-# Funções de PDF
 def emoji_para_imagem(emoji, tamanho=12):
     """Converte emoji em imagem base64"""
     try:
@@ -429,7 +643,7 @@ def criar_linha_com_emoji(emoji, texto, estilo, tamanho_emoji=12):
         return Paragraph(f"• {texto}", estilo)
 
 def gerar_pdf(registro):
-    """Gera PDF com os resultados do questionário"""
+    """Gera PDF com os resultados do questionário - TABELAS SEPARADAS PT/EN"""
     try:
         buffer = BytesIO()
         
@@ -440,28 +654,46 @@ def gerar_pdf(registro):
             leftMargin=72,
             topMargin=72, 
             bottomMargin=18,
-            title=f"Emissão CO2 - {registro['email']}"
+            title=f"Emissão CO2e - {registro['email']} | CO2e Emissions - {registro['email']}"
         )
         
         elements = []
         styles = getSampleStyleSheet()
         
+        # ===== ESTILOS PERSONALIZADOS =====
         estilo_titulo = ParagraphStyle(
             'TituloPrincipal',
             parent=styles['Heading1'],
             fontSize=18,
-            spaceAfter=30,
+            spaceAfter=15,
             textColor=colors.HexColor('#2c3e50'),
             alignment=1
+        )
+        
+        estilo_titulo_en = ParagraphStyle(
+            'TituloIngles',
+            parent=styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor('#666666'),
+            alignment=1,
+            fontName='Helvetica-Oblique'
         )
         
         estilo_subtitulo = ParagraphStyle(
             'Subtitulo',
             parent=styles['Heading2'],
             fontSize=14,
-            spaceAfter=12,
-            textColor=colors.HexColor('#34495e'),
-            borderPadding=5
+            spaceAfter=8,
+            textColor=colors.HexColor('#34495e')
+        )
+        
+        estilo_subtitulo_en = ParagraphStyle(
+            'SubtituloIngles',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#666666'),
+            spaceAfter=10,
+            fontName='Helvetica-Oblique'
         )
         
         estilo_normal = ParagraphStyle(
@@ -471,18 +703,41 @@ def gerar_pdf(registro):
             spaceAfter=6
         )
         
+        estilo_normal_en = ParagraphStyle(
+            'NormalIngles',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#666666'),
+            spaceAfter=8,
+            fontName='Helvetica-Oblique'
+        )
+        
         estilo_destaque = ParagraphStyle(
             'Destaque',
             parent=styles['Normal'],
             fontSize=12,
             textColor=colors.HexColor('#27ae60'),
-            alignment=1
+            alignment=1,
+            spaceAfter=15
+        )
+        
+        estilo_destaque_en = ParagraphStyle(
+            'DestaqueIngles',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#666666'),
+            alignment=1,
+            spaceAfter=20,
+            fontName='Helvetica-Oblique'
         )
 
-        # ===== CABEÇALHO =====
-        titulo = Paragraph("Cada Deslocamento Conta: Seu Impacto em CO2 no Evento", estilo_titulo)
-        elements.append(titulo)
-        
+        # ===== CABEÇALHO BILINGUE =====
+        titulo_pt = "Cada Deslocamento Conta: Seu Impacto em CO2e no Evento"
+        titulo_en = translations.get(titulo_pt, "Every Trip Counts: Your CO2e Impact at the Event")        
+        elements.append(Paragraph(titulo_pt, estilo_titulo))
+        elements.append(Paragraph(titulo_en, estilo_titulo_en))
+        elements.append(Spacer(1, 15))
+        # Linha divisória
         linha_divisoria = Table([[""]], colWidths=[16*cm], rowHeights=[1])
         linha_divisoria.setStyle(TableStyle([
             ('LINEABOVE', (0,0), (-1,-1), 1, colors.HexColor('#3498db')),
@@ -491,20 +746,22 @@ def gerar_pdf(registro):
         elements.append(linha_divisoria)
         elements.append(Spacer(1, 20))
 
-        # ===== DADOS DO PARTICIPANTE =====
+        # ===== DADOS DO PARTICIPANTE - SEPARADO PT/EN =====
+        
         elements.append(Paragraph("DADOS DO PARTICIPANTE", estilo_subtitulo))
         
-        dados_pessoais = [
-            ["Local de Origem:", 
-             "Estrangeiro" if registro.get('estado_origem') == "Não se aplica (estrangeiro)" 
-             else registro.get('estado_origem', 'Não informado')],
+        tipo_traduzido = translations.get(registro['tipo_participante'])
+
+        
+        # TABELA EM PORTUGUÊS
+        dados_pessoais_pt = [
+            ["País de Origem:", registro['pais_origem_pt']],  # Nova linha
             ["Tipo de Participante:", registro['tipo_participante']],
             ["Email:", registro['email']],
-            ["Data do Cálculo:", registro['data']]
         ]
         
-        tabela_dados = Table(dados_pessoais, colWidths=[4*cm, 10*cm])
-        tabela_dados.setStyle(TableStyle([
+        tabela_dados_pt = Table(dados_pessoais_pt, colWidths=[4*cm, 10*cm])
+        tabela_dados_pt.setStyle(TableStyle([
             ('FONT', (0,0), (-1,-1), 'Helvetica', 10),
             ('FONT', (0,0), (0,-1), 'Helvetica-Bold', 10),
             ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#ecf0f1')),
@@ -516,42 +773,69 @@ def gerar_pdf(registro):
             ('PADDING', (0,0), (-1,-1), 6),
         ]))
         
-        elements.append(tabela_dados)
+        elements.append(tabela_dados_pt)
+        elements.append(Spacer(1, 10))
+        
+        # TÍTULO INGLÊS
+        elements.append(Paragraph("PARTICIPANT DATA", estilo_subtitulo_en))
+        
+        # TABELA EM INGLÊS
+        dados_pessoais_en = [
+            ["Country of Origin:", registro['pais_origem_en']],
+            ["Participant Type:", tipo_traduzido],
+            ["Email:", registro['email']],
+        ]
+        
+        tabela_dados_en = Table(dados_pessoais_en, colWidths=[4*cm, 10*cm])
+        tabela_dados_en.setStyle(TableStyle([
+            ('FONT', (0,0), (-1,-1), 'Helvetica-Oblique', 9),
+            ('FONT', (0,0), (0,-1), 'Helvetica-BoldOblique', 9),
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f9f9f9')),
+            ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor('#666666')),
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),
+            ('ALIGN', (1,0), (1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#d5dbdb')),
+            ('PADDING', (0,0), (-1,-1), 6),
+        ]))
+        
+        elements.append(tabela_dados_en)
         elements.append(Spacer(1, 25))
 
-        # ===== RESUMO DA EMISSÃO =====
-        elements.append(Paragraph("RESUMO DA EMISSÃO", estilo_subtitulo))
+        # ===== RESUMO DA EMISSÃO - SEPARADO PT/EN =====
         
-        # Cálculo detalhado
         emissao_local = EMISSOES_TRANSPORTE.get(registro['transporte_local'], 5.0) * registro['distancia_local'] * registro['dias_evento']
         emissao_principal = registro['emissao_total'] - emissao_local
         
-        emissao_total = Paragraph(
-            f"<b>TOTAL DE EMISSÕES: {registro['emissao_total']:.2f} gCO2</b>", 
-            estilo_destaque
-        )
-        elements.append(emissao_total)
-        elements.append(Spacer(1, 15))
-
-        detalhes_emissao = [
-            ["Tipo de Deslocamento", "Transporte", "Distância", "Emissão (gCO2)"],
+        elements.append(Paragraph("RESUMO DA EMISSÃO", estilo_subtitulo))
+        elements.append(Paragraph(f"TOTAL DE EMISSÕES: {registro['emissao_total']:.2f} kgCO2e", estilo_destaque))
+        
+        transporte_cidade_pt = registro['transporte_cidade'].capitalize()
+        transporte_cidade_en = translations.get(registro['transporte_cidade']) or "City Transport"
+        
+        transporte_local_pt = registro['transporte_local'].capitalize()
+        transporte_local_en = translations.get(registro['transporte_local']) or "Local Commute"
+        
+        # TABELA EM PORTUGUÊS
+        detalhes_emissao_pt = [
+            ["Tipo de Deslocamento", "Transporte", "Distância", "Emissão (kgCO2e)"],
             [
                 "Até a cidade do evento", 
-                registro['transporte_cidade'].capitalize(), 
-                f"{registro['distancia_cidade']} km",
+                transporte_cidade_pt, 
+                f"{registro['distancia_cidade']} km", 
                 f"{emissao_principal:.2f}"
             ],
             [
                 "Deslocamento local", 
-                registro['transporte_local'].capitalize(), 
+                transporte_local_pt, 
                 f"{registro['distancia_local']} km/dia × {registro['dias_evento']} dias", 
                 f"{emissao_local:.2f}"
             ],
-            ["TOTAL", "", "", f"{registro['emissao_total']:.2f} gCO2"]
+            ["TOTAL", "", "", f"{registro['emissao_total']:.2f} kgCO2e"]
         ]
         
-        tabela_emissao = Table(detalhes_emissao, colWidths=[5.5*cm, 3*cm, 4*cm, 3.5*cm])
-        tabela_emissao.setStyle(TableStyle([
+        tabela_emissao_pt = Table(detalhes_emissao_pt, colWidths=[5.5*cm, 3*cm, 4*cm, 3.5*cm])
+        tabela_emissao_pt.setStyle(TableStyle([
             ('FONT', (0,0), (-1,-1), 'Helvetica', 9),
             ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 10),
             ('FONT', (0,-1), (-1,-1), 'Helvetica-Bold', 10),
@@ -565,24 +849,63 @@ def gerar_pdf(registro):
             ('PADDING', (0,0), (-1,-1), 8),
         ]))
         
-        elements.append(tabela_emissao)
+        elements.append(tabela_emissao_pt)
+        elements.append(Spacer(1, 15))
+        
+        elements.append(Paragraph("EMISSIONS SUMMARY", estilo_subtitulo_en))
+        elements.append(Paragraph(f"<font color='#666666'><i>TOTAL EMISSIONS: {registro['emissao_total']:.2f} kgCO2</i></font>", estilo_destaque_en))
+        
+        detalhes_emissao_en = [
+            ["Trip Type", "Transport", "Distance", "Emissions (kgCO2e)"],
+            [
+                "To the event city", 
+                transporte_cidade_en, 
+                f"{registro['distancia_cidade']} km", 
+                f"{emissao_principal:.2f}"
+            ],
+            [
+                "Local commute", 
+                transporte_local_en, 
+                f"{registro['distancia_local']} km/day × {registro['dias_evento']} days", 
+                f"{emissao_local:.2f}"
+            ],
+            ["TOTAL", "", "", f"{registro['emissao_total']:.2f} kgCO2e"]
+        ]
+        
+        tabela_emissao_en = Table(detalhes_emissao_en, colWidths=[5.5*cm, 3*cm, 4*cm, 3.5*cm])
+        tabela_emissao_en.setStyle(TableStyle([
+            ('FONT', (0,0), (-1,-1), 'Helvetica-Oblique', 9),
+            ('FONT', (0,0), (-1,0), 'Helvetica-BoldOblique', 10),
+            ('FONT', (0,-1), (-1,-1), 'Helvetica-BoldOblique', 10),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#5dade2')),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#58d68d')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('TEXTCOLOR', (0,-1), (-1,-1), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#aab7b8')),
+            ('PADDING', (0,0), (-1,-1), 8),
+        ]))
+        
+        elements.append(tabela_emissao_en)
         elements.append(Spacer(1, 25))
 
-        # ===== COMPARAÇÕES AMBIENTAIS =====
-        elements.append(Paragraph("IMPACTO AMBIENTAL - EQUIVALÊNCIAS", estilo_subtitulo))
+        # ===== COMPARAÇÕES AMBIENTAIS - SEPARADO PT/EN =====
         
-        arvores = registro['emissao_total'] / 21000  # 1 árvore absorve ~21kg CO2/ano
+        arvores = registro['emissao_total'] / 7000000  # 1 árvore absorve ~7.000.000g CO2/ano ou 7 toneladas de CO2/ano
         lampadas = registro['emissao_total'] / 450   # 1 lâmpada LED/dia
         
-        comparativos = [
+        elements.append(Paragraph("IMPACTO AMBIENTAL - EQUIVALÊNCIAS", estilo_subtitulo))
+        
+        comparativos_pt = [
             ["Equivalência", "Valor Aproximado"],
             ["Árvores para absorver em 1 ano", f"{arvores:.2f} árvores"],
             ["Horas de lâmpada LED (60W)", f"{lampadas:.1f} horas"],
-            ["Emissão diária média brasileira*", "≈ 12.000 gCO2"]
+            ["Emissão diária média brasileira*", "≈ 12 kgCO2e"]
         ]
         
-        tabela_comparativo = Table(comparativos, colWidths=[9*cm, 7*cm])
-        tabela_comparativo.setStyle(TableStyle([
+        tabela_comparativo_pt = Table(comparativos_pt, colWidths=[9*cm, 7*cm])
+        tabela_comparativo_pt.setStyle(TableStyle([
             ('FONT', (0,0), (-1,-1), 'Helvetica', 9),
             ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 10),
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e67e22')),
@@ -593,36 +916,84 @@ def gerar_pdf(registro):
             ('PADDING', (0,0), (-1,-1), 8),
         ]))
         
-        elements.append(tabela_comparativo)
-        elements.append(Spacer(1, 10))
+        elements.append(tabela_comparativo_pt)
         
-        nota = Paragraph(
-            "* Baseado na média brasileira de 4.4 toneladas de CO2 per capita/ano",
+        nota_pt = Paragraph(
+            "* Baseado na média brasileira de 4.4 toneladas de CO2e per capita/ano",
             ParagraphStyle('Nota', parent=estilo_normal, fontSize=8, textColor=colors.gray)
         )
-        elements.append(nota)
-        elements.append(Spacer(1, 25))
-
-        # ===== RECOMENDAÇÕES =====
-        elements.append(Paragraph("RECOMENDAÇÕES PARA REDUZIR EMISSÕES", estilo_subtitulo))
+        elements.append(nota_pt)
+        elements.append(Spacer(1, 15))
         
-        recomendacoes = [
-            "🏨 Escolha acomodações próximas ao local do evento, reduzindo a necessidade de transporte motorizado",
-            "🚶 Para distâncias curtas, opte por caminhar ou pedalar, formas ativas e sustentáveis de locomoção que também favorecem a saúde e o bem-estar",
-            "🌱 Prefira transportes públicos ou coletivos para deslocamentos sempre que possível",
-            "🚗 Organize caronas solidárias com outros participantes, otimizando o uso dos veículos e diminuindo o número de deslocamentos individuais",
-            "📅 Planeje seus deslocamentos com antecedência para evitar horários de tráfego intenso e, consequentemente, o aumento do consumo de combustível",
-            "💡 Dê preferência a veículos elétricos ou híbridos, quando disponíveis, para minimizar o impacto ambiental dos deslocamentos", 
-            "🌳 Compense emissões participando de programas de reflorestamento ou outras iniciativas ambientais reconhecidas"
+        elements.append(Paragraph("ENVIRONMENTAL IMPACT - EQUIVALENCES", estilo_subtitulo_en))
+        
+        comparativos_en = [
+            ["Equivalence", "Approximate Value"],
+            ["Trees to absorb in 1 year", f"{arvores:.2f} trees"],
+            ["Hours of LED bulb (60W)", f"{lampadas:.1f} hours"],
+            ["Average daily Brazilian emission*", "≈ 12 kgCO2e"]
         ]
         
-        for rec in recomendacoes:
-            elements.append(Paragraph(rec, estilo_normal))
+        tabela_comparativo_en = Table(comparativos_en, colWidths=[9*cm, 7*cm])
+        tabela_comparativo_en.setStyle(TableStyle([
+            ('FONT', (0,0), (-1,-1), 'Helvetica-Oblique', 9),
+            ('FONT', (0,0), (-1,0), 'Helvetica-BoldOblique', 10),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f39c12')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#e67e22')),
+            ('PADDING', (0,0), (-1,-1), 8),
+        ]))
+        
+        elements.append(tabela_comparativo_en)
+        
+        nota_en = Paragraph(
+            "<font color='#666666'><i>* Based on the Brazilian average of 4.4 tons of CO2e per capita/year</i></font>",
+            ParagraphStyle('Nota', parent=estilo_normal, fontSize=8, textColor=colors.gray)
+        )
+        elements.append(nota_en)
+        elements.append(Spacer(1, 25))
+
+        # ===== RECOMENDAÇÕES - LISTAS SEPARADAS PT/EN =====
+        
+        elements.append(Paragraph("RECOMENDAÇÕES PARA REDUZIR EMISSÕES", estilo_subtitulo))
+        
+        recomendacoes_pt = [
+            " Escolha acomodações próximas ao local do evento, reduzindo a necessidade de transporte motorizado",
+            " Para distâncias curtas, opte por caminhar ou pedalar, formas ativas e sustentáveis de locomoção que também favorecem a saúde e o bem-estar",
+            " Prefira transportes públicos ou coletivos para deslocamentos sempre que possível",
+            " Organize caronas solidárias com outros participantes, otimizando o uso dos veículos e diminuindo o número de deslocamentos individuais",
+            " Planeje seus deslocamentos com antecedência para evitar horários de tráfego intenso e, consequentemente, o aumento do consumo de combustível",
+            " Dê preferência a veículos elétricos ou híbridos, quando disponíveis, para minimizar o impacto ambiental dos deslocamentos", 
+            " Compense emissões participando de programas de reflorestamento ou outras iniciativas ambientais reconhecidas"
+        ]
+        
+        for rec_pt in recomendacoes_pt:
+            elements.append(Paragraph(f"• {rec_pt}", estilo_normal))
+            elements.append(Spacer(1, 4))
+        
+        elements.append(Spacer(1, 15))
+        
+        elements.append(Paragraph("RECOMMENDATIONS TO REDUCE EMISSIONS", estilo_subtitulo_en))
+        
+        recomendacoes_en = [
+            " Choose accommodations close to the event venue, reducing the need for motorized transport",
+            " For short distances, choose walking or cycling, active and sustainable forms of mobility that also promote health and well-being",
+            " Prefer public or collective transportation whenever possible",
+            " Organize carpooling with other participants, optimizing vehicle use and reducing the number of individual trips",
+            " Plan your trips in advance to avoid peak traffic times and consequently reduce fuel consumption",
+            " Prefer electric or hybrid vehicles when available to minimize the environmental impact of travel", 
+            " Compensate emissions by participating in reforestation programs or other recognized environmental initiatives"
+        ]
+        
+        for rec_en in recomendacoes_en:
+            elements.append(Paragraph(f"<font color='#666666'><i>• {rec_en}</i></font>", estilo_normal_en))
             elements.append(Spacer(1, 6))
         
         elements.append(Spacer(1, 20))
 
-        # ===== RODAPÉ =====
+        # ===== RODAPÉ SEPARADO PT/EN =====
         elements.append(Spacer(1, 10))
         linha_rodape = Table([[""]], colWidths=[16*cm], rowHeights=[1])
         linha_rodape.setStyle(TableStyle([
@@ -630,9 +1001,9 @@ def gerar_pdf(registro):
         ]))
         elements.append(linha_rodape)
         
-        rodape = Paragraph(
-            "Calculadora de Emissão de CO2 - Eventos Esportivos Sustentáveis<br/>" +
-            "Uma iniciativa da parceria entre CBVela e ETTA/UFF com o apoio do CNPq e Faperj para promover aconscientização ambiental em eventos esportivos",
+        rodape_pt = Paragraph(
+            "Calculadora de Emissão de CO2e - Eventos Esportivos Sustentáveis<br/>" +
+            "Uma iniciativa da parceria entre CBVela e ETTA/UFF com o apoio do CNPq e Faperj para promover a conscientização ambiental em eventos esportivos",
             ParagraphStyle(
                 'Rodape', 
                 parent=estilo_normal, 
@@ -642,7 +1013,23 @@ def gerar_pdf(registro):
                 spaceBefore=10
             )
         )
-        elements.append(rodape)
+        elements.append(rodape_pt)
+        
+        elements.append(Spacer(1, 10))
+        
+        rodape_en = Paragraph(
+            "<font color='#666666'><i>CO2e Emissions Calculator - Sustainable Sporting Events<br/>" +
+            "An initiative of the partnership between CBVela and ETTA/UFF with support from CNPq and Faperj to promote environmental awareness in sporting events</i></font>",
+            ParagraphStyle(
+                'RodapeEn', 
+                parent=estilo_normal, 
+                fontSize=8, 
+                alignment=1, 
+                textColor=colors.HexColor('#95a5a6'),
+                spaceBefore=5
+            )
+        )
+        elements.append(rodape_en)
 
         # ===== GERAR PDF =====
         doc.build(elements)
@@ -650,9 +1037,9 @@ def gerar_pdf(registro):
         return buffer
         
     except Exception as e:
-        print(f"Erro ao gerar PDF: {str(e)}")
+        print(f"Erro ao gerar PDF detalhado: {str(e)}")
         return gerar_pdf_simples(registro)
-
+    
 def gerar_pdf_simples(registro):
     """Fallback: PDF simples caso a versão detalhada falhe"""
     buffer = BytesIO()
@@ -666,7 +1053,7 @@ def gerar_pdf_simples(registro):
     p.drawString(100, 750, f"Tipo: {registro['tipo_participante']}")
     
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, 700, f"Emissão Total: {registro['emissao_total']:.2f} gCO2")
+    p.drawString(100, 700, f"Emissão Total: {registro['emissao_total']:.2f} kgCO2")
     
     p.setFont("Helvetica", 10)
     p.drawString(100, 670, f"Transporte principal: {registro['transporte_cidade']}")
@@ -682,24 +1069,72 @@ def gerar_pdf_simples(registro):
     buffer.seek(0)
     return buffer
 
+def criar_tabela_simples(dados, col_widths, styles, header_color='#3498db'):
+    """
+    Cria uma tabela simples monolíngue com cabeçalho colorido.
+    dados: lista de listas (primeira linha é cabeçalho)
+    col_widths: larguras das colunas em cm
+    styles: objeto StyleSheet do reportlab
+    header_color: cor de fundo do cabeçalho (hex)
+    """
+    from reportlab.platypus import Table, TableStyle, Paragraph
+    from reportlab.lib import colors
+    
+    tabela_dados = []
+    for i, linha in enumerate(dados):
+        nova_linha = []
+        for item in linha:
+            if isinstance(item, str):
+                if i == 0:  # cabeçalho
+                    estilo = ParagraphStyle('Header', parent=styles['Normal'], 
+                                            fontSize=10, textColor=colors.white, alignment=1)
+                else:
+                    estilo = styles['Normal']
+                nova_linha.append(Paragraph(item, estilo))
+            else:
+                nova_linha.append(item)
+        tabela_dados.append(nova_linha)
+    
+    tabela = Table(tabela_dados, colWidths=col_widths)
+    tabela.setStyle(TableStyle([
+        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 10),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor(header_color)),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#bdc3c7')),
+        ('PADDING', (0,0), (-1,-1), 6),
+    ]))
+    return tabela
+
+
 # Rotas Flask
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html',translations=translations)
 
 @app.route('/questionario')
 def questionario():
     return render_template('questionario.html', 
                           transportes=EMISSOES_TRANSPORTE.keys(),
                           tipos_participante=TIPOS_PARTICIPANTE,
-                          estados_brasil=ESTADOS_BRASIL)
+                          #estados_brasil=ESTADOS_BRASIL,
+                          paises_portugues=PAISES_PORTUGUES,  
+                          paises_ingles=PAISES_INGLES,        
+                          paises_dict=PAISES_DICT,            
+                          translations=translations)
 
 @app.route('/submit', methods=['POST'])
 def submit():
     try:
         dados_form = request.form
         
-        # Validações e cálculos
+        pais_pt = dados_form.get('pais_origem', '').strip()
+        if not pais_pt:
+            return "Erro: Selecione um país de origem.", 400
+        pais_en = PAISES_DICT.get(pais_pt, pais_pt)
+        
+
         tipo_participante = dados_form['tipo_participante']
         if tipo_participante not in TIPOS_PARTICIPANTE:
             tipo_participante = "Outro"
@@ -728,9 +1163,8 @@ def submit():
         dias_evento = int(dados_form['dias_evento'])
         emissao_local = EMISSOES_TRANSPORTE.get(transporte_local, 5.0) * distancia_local * dias_evento
         
-        emissao_total = emissao_principal + emissao_local
+        emissao_total = (emissao_principal + emissao_local)/1000  # Converte para kgCO2
         
-        # NOVOS: Processar campos de logística
         def processar_campo_numerico(nome_campo):
             valor = dados_form.get(nome_campo, '')
             if valor and valor.strip():
@@ -740,12 +1174,11 @@ def submit():
                     return None
             return None
         
-        # Processar todos os campos financeiros
         custo_transporte = processar_campo_numerico('custo_transporte')
         custo_diario_valor = processar_campo_numerico('custo_transporte_diario')
-        gasto_alimentacao_valor = processar_campo_numerico('gasto_alimentacao')      # NOVO
-        gasto_equipamentos_valor = processar_campo_numerico('gasto_equipamentos')    # NOVO
-        gasto_botes_valor = processar_campo_numerico('gasto_botes')                  # NOVO
+        gasto_alimentacao_valor = processar_campo_numerico('gasto_alimentacao')      
+        gasto_equipamentos_valor = processar_campo_numerico('gasto_equipamentos')    
+        gasto_botes_valor = processar_campo_numerico('gasto_botes')                  
         gasto_hospedagem_valor = processar_campo_numerico('gasto_hospedagem')
 
         pontos_turisticos = dados_form.get('pontos_turisticos', '').strip()
@@ -755,7 +1188,9 @@ def submit():
         with app.app_context():
             nova_resposta = RespostaEmissao(
                 email=dados_form['email'],
-                estado_origem=dados_form['estado_origem'],
+#                estado_origem=dados_form['estado_origem'],
+                pais_origem_pt=pais_pt,
+                pais_origem_en=pais_en,
                 tipo_participante=tipo_participante,
                 transporte_cidade=transporte_principal,
                 distancia_cidade=distancia_principal,
@@ -780,13 +1215,15 @@ def submit():
             
             resposta_id = nova_resposta.id
         
-        # Gerar gráfico atualizado
+        # Gerar gráfico 
         grafico_base64 = gerar_grafico_base64()
         
         return render_template('resultados.html', 
                               registro=nova_resposta.to_dict(), 
                               grafico_base64=grafico_base64,
-                              resposta_id=resposta_id)
+                              resposta_id=resposta_id,
+                              paises_dict=PAISES_DICT,
+                              translations=translations)
                               
     except Exception as e:
         print(f"Erro no submit: {e}")
@@ -808,18 +1245,19 @@ def download_dados():
         # Criar CSV
         si = StringIO()
         cw = csv.writer(si)
-        cw.writerow(['ID', 'Email', 'Estado Origem', 'Tipo Participante', 
+        cw.writerow(['ID', 'Email', 'País de Origem', 'Tipo Participante', 
                      'Transporte até a Cidade', 'Distância até a Cidade (km)', 'Custo Transporte (R$)', 
                      'Transporte Local', 'Distância Local (km)', 'Dias de Evento',
                      'Custo Transporte Diário (R$)','Gasto Alimentação (R$)', 
                      'Gasto Transporte Equipamentos (R$)', 'Gasto Aluguel Botes (R$)','Gasto Hospedagem (R$)',
-                     'Pontos Turísticos Visitados','Emissão Total (gCO2)','Data Registro'])
+                     'Pontos Turísticos Visitados','Emissão Total (kgCO2)'])
         
         for resposta in respostas:
             cw.writerow([
                 resposta.id,
                 resposta.email,
-                resposta.estado_origem,
+                f"{resposta.pais_origem_pt} / {resposta.pais_origem_en}",
+             #   resposta.estado_origem,
                 resposta.tipo_participante,
                 resposta.transporte_cidade,
                 float(resposta.distancia_cidade),
@@ -835,7 +1273,6 @@ def download_dados():
                 resposta.pontos_turisticos if resposta.pontos_turisticos else '',
                 
                 float(resposta.emissao_total),
-                resposta.data_registro.strftime("%Y-%m-%d %H:%M:%S")
             ])
         
         output = make_response(si.getvalue())
@@ -853,17 +1290,18 @@ def download_pdf(resposta_id):
             resposta = RespostaEmissao.query.get_or_404(resposta_id)
         
         pdf_buffer = gerar_pdf(resposta.to_dict())
+        email_parte = resposta.email.split('@')[0] if resposta.email else 'sem_email'
         
         return send_file(
             pdf_buffer,
             as_attachment=True,
-            download_name=f"emissao_co2_{resposta.email.split('@')[0]}_{resposta.data_registro.strftime('%Y-%m-%d')}.pdf",
+            download_name=f"emissao_co2_{email_parte}.pdf",
             mimetype='application/pdf'
         )
     except Exception as e:
         return f"Erro ao gerar PDF: {str(e)}", 500
 
-# Inicialização SEGURA
+# Inicialização 
 def init_database():
     with app.app_context():
         try:
